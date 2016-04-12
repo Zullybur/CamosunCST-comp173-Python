@@ -7,10 +7,14 @@
 # * * * * * * * * * * * * * * * * * * * * * * #
 
 import socket
+import sys
 
 if __name__ == '__main__':
-    server = "localhost"
-    port = 45678
+    SERVER = "localhost"
+    PORT = 45678
+    NAME = bytes(sys.argv[1], 'utf-8')
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect((server, port))
-    s.sendall("Matthew")
+    s.connect((SERVER, PORT))
+    s.sendall(NAME)
+    result = s.recv(4096)
+    print (result.decode('utf-8'))

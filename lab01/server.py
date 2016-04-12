@@ -9,11 +9,13 @@
 import socket
 
 if __name__ == '__main__':
-    port = 45678
+    PORT = 45678
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind(("", port))
+
+    s.bind(("", PORT))
 
     # Wait for incoming connections and process data
-    while true:
-        inTuple = s.recvfrom()
-        s.connect((inTuple[0], "Hello, {}".format(inTuple[1])))
+    while True:
+        inTuple = s.recvfrom(4096)
+        string = "Hello, {}" .format(inTuple[0].decode('utf-8'))
+        s.sendto(bytes(string, 'utf-8'), inTuple[1])
