@@ -21,8 +21,8 @@ if __name__ == '__main__':
         result = bytearray(RESULT_SIZE)
         inTuple = s.recvfrom(TRANS_SIZE)
         data = inTuple[0]
-        intVal = int(data[0])
-        print (intVal + 1)
-        result[0] = intVal + 1
-        print (result)
+        print (data)
+        intVal = int(data[0]) + int(data[1])
+        print (intVal)
+        result[0] = intVal
         s.sendto(result, inTuple[1])
