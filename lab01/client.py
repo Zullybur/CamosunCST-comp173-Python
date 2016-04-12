@@ -10,11 +10,11 @@ import socket
 import sys
 
 if __name__ == '__main__':
-    SERVER = "localhost"
-    PORT = 45678
-    NAME = bytes(sys.argv[1], 'utf-8')
+    address = (sys.argv[1], int(sys.argv[2]))
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect((SERVER, PORT))
-    s.sendall(NAME)
+    s.connect(address)
+
+    b = bytearray([1])
+    s.sendall(b)
     result = s.recv(4096)
-    print (result.decode('utf-8'))
+    print (int(result[0]))
