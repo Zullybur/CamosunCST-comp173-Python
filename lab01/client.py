@@ -24,12 +24,12 @@ if __name__ == '__main__':
         b.append(2**2)
     else:
         b.append(0)
-
     # Check paramater list count
     if len(sys.argv) > 15:
         maxRange = 15
     else:
         maxRange = len(sys.argv)
+    b.append(maxRange - 4)
     # Add parameters
     for i in range(4, maxRange):
         if i % 2 == 0:

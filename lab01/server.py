@@ -24,7 +24,8 @@ if __name__ == '__main__':
         data, address = s.recvfrom(TRANS_SIZE)
         # Initialize result variable
         opcode = int(data[0])
-        result = (int(data[1])) >> 4
+        count = int(data[1])
+        result = (int(data[2])) >> 4
         if opcode == 2**0:
             result += (int(data[1])) & MASK_NIB
         elif opcode == 2**1:
@@ -33,7 +34,7 @@ if __name__ == '__main__':
             result *= (int(data[1])) & MASK_NIB
         print (result)
         # Operate through the remaining parameters
-        for i in range(2, len(data)):
+        for i in range(2, count):
             if opcode == 2**0:
                 result += (int(data[i])) >> 4
                 result += (int(data[i])) & MASK_NIB
