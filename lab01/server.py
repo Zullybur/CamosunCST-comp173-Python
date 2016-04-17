@@ -23,30 +23,34 @@ if __name__ == '__main__':
     while True:
         data, address = s.recvfrom(TRANS_SIZE)
         print("data:", data)
-        # Initialize result variable
+        # Initialize received data
         opcode = int(data[0])
         count = int(data[1])
-        result = (int(data[2])) >> 4
-        if opcode == 2**0:
-            result += (int(data[2])) & MASK_NIB
-        elif opcode == 2**1:
-            result -= (int(data[2])) & MASK_NIB
-        elif opcode == 2**2:
-            result *= (int(data[2])) & MASK_NIB
-        print (result)
-        # Operate through the remaining parameters
-        for i in range(3, 2 + (count // 2)):
-            print("i =", i, "max =", 1 + (count // 2))
-            if opcode == 2**0:
-                result += (int(data[i])) >> 4
-                result += (int(data[i])) & MASK_NIB
-            elif opcode == 2**1:
-                result -= (int(data[i])) >> 4
-                result -= (int(data[i])) & MASK_NIB
-            elif opcode == 2**2:
-                result *= (int(data[i])) >> 4
-                result *= (int(data[i])) & MASK_NIB
-            print (result)
+        if count == 0:
+            result = 0
+        else:
+            result = (int(data[2]) >> 4)
+            print(result)
+            for i in range(1, count):
+                print("for loop. i:", i)
+                if i % 2 == 0:
+                    print("op on even")
+                    if opcode == 2**0:
+                        result += (int(data[i//2+2])) >> 4
+                    if opcode == 2**1:
+                        result -= (int(data[i//2+2])) >> 4
+                    if opcode == 2**2:
+                        result *= (int(data[i//2+2])) >> 4
+                else:
+                    print("op on odd")
+                    if opcode == 2**0:
+                        result += (int(data[i//2+2])) & MASK_NIB
+                    if opcode == 2**1:
+                        result -= (int(data[i//2+2])) & MASK_NIB
+                    if opcode == 2**2:
+                        result *= (int(data[i//2+2])) & MASK_NIB
+                    
+                print(result)
         # Prepare result as byte array and submit to client
         b = bytearray(RESULT_SIZE)
         b[0] = (result >> 24)

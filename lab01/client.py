@@ -41,10 +41,6 @@ if __name__ == '__main__':
         else:
             b[i//2] = b[i//2] | int(sys.argv[i])
             print(b)
-    # Avoid multiplying by zero with an odd number of parameters
-    if sys.argv[3] == '*' and i % 2 == 0:
-        b[(i-4)//2] += 1
-    print (b)
     # Connect to server, send data, and receive response
     s.connect(address)
     s.sendall(b)
