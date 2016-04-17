@@ -35,8 +35,8 @@ if __name__ == '__main__':
             result *= (int(data[2])) & MASK_NIB
         print (result)
         # Operate through the remaining parameters
-        for i in range(3, 1 + (count // 2)):
-            print("i =", i, "count =", count)
+        for i in range(3, 2 + (count // 2)):
+            print("i =", i, "max =", 1 + (count // 2))
             if opcode == 2**0:
                 result += (int(data[i])) >> 4
                 result += (int(data[i])) & MASK_NIB
