@@ -24,19 +24,23 @@ if __name__ == '__main__':
         b.append(2**2)
     else:
         b.append(0)
+    print(b)
     # Check paramater list count
     if len(sys.argv) > 15:
         maxRange = 15
     else:
         maxRange = len(sys.argv)
     b.append(maxRange - 4)
+    print(b)
+    print("len(sys): {}, maxRange: {}, b[1]: {}" .format(len(sys.argv), maxRange, b[1]))
     # Add parameters
     for i in range(4, maxRange):
         if i % 2 == 0:
             b.append((int(sys.argv[i])) << 4)
+            print(b)
         else:
-            b[(i-3)//2] = b[(i-3)//2] | int(sys.argv[i])
-    print(i)
+            b[i//2] = b[i//2] | int(sys.argv[i])
+            print(b)
     # Avoid multiplying by zero with an odd number of parameters
     if sys.argv[3] == '*' and i % 2 == 0:
         b[(i-4)//2] += 1
