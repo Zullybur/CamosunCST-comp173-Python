@@ -10,6 +10,7 @@ import socket
 import sys
 
 if __name__ == '__main__':
+    TRANS_SIZE = 4096
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     address = (sys.argv[1], int(sys.argv[2]))
     b = bytearray()
@@ -35,11 +36,16 @@ if __name__ == '__main__':
             b.append((int(sys.argv[i])) << 4)
         else:
             b[(i-3)//2] = b[(i-3)//2] | int(sys.argv[i])
+    print(i)
+    # Avoid multiplying by zero with an odd number of parameters
+    if sys.argv[3] == '*' and i % 2 == 0:
+        b[(i-4)//2] += 1
     print (b)
     # Connect to server, send data, and receive response
     s.connect(address)
     s.sendall(b)
-    data = s.recv(4096)
+    data = s.recv(TRANS_SIZE)
+    print(data)
     # Process and output result
-    result = (int(data[0]) << 8) + int(data[1])
+    result = ((int(data[0])) << 24) | ((int(data[1])) << 16) | ((int(data[2])) << 8) | (int(data[3]))
     print (result)

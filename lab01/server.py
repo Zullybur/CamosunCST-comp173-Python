@@ -3,7 +3,7 @@
 # client with operator and return calculation.  #
 #                                               #
 # Created by: Matthew Casiro                    #
-# Created on: April 12 2016                     #
+# Creasted on: April 12 2016                    #
 # * * * * * * * * * * * * * * * * * * * * * * * #
 
 import socket
@@ -12,17 +12,43 @@ import sys
 if __name__ == '__main__':
     TRANS_SIZE = 4096
     RESULT_SIZE = 4
+    MASK_NIB = 2**4 - 1
+    MASK_LSB = 2**8 - 1
+
     port = sys.argv[1]
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind(("", int(port)))
 
     # Wait for incoming connections and process data
+    s.bind(("", int(port)))
     while True:
-        result = bytearray(RESULT_SIZE)
-        inTuple = s.recvfrom(TRANS_SIZE)
-        data = inTuple[0]
-        print (data)
-        intVal = int(data[0]) + int(data[1])
-        print (intVal)
-        result[0] = intVal
-        s.sendto(result, inTuple[1])
+        data, address = s.recvfrom(TRANS_SIZE)
+        # Initialize result variable
+        opcode = int(data[0])
+        result = (int(data[1])) >> 4
+        if opcode == 2**0:
+            result += (int(data[1])) & MASK_NIB
+        elif opcode == 2**1:
+            result -= (int(data[1])) & MASK_NIB
+        elif opcode == 2**2:
+            result *= (int(data[1])) & MASK_NIB
+        print (result)
+        # Operate through the remaining parameters
+        for i in range(2, len(data)):
+            if opcode == 2**0:
+                result += (int(data[i])) >> 4
+                result += (int(data[i])) & MASK_NIB
+            elif opcode == 2**1:
+                result -= (int(data[i])) >> 4
+                result -= (int(data[i])) & MASK_NIB
+            elif opcode == 2**2:
+                result *= (int(data[i])) >> 4
+                result *= (int(data[i])) & MASK_NIB
+            print (result)
+        # Prepare result as byte array and submit to client
+        b = bytearray(RESULT_SIZE)
+        b[0] = (result >> 24)
+        b[1] = (result >> 16) & MASK_LSB
+        b[2] = (result >> 8) & MASK_LSB
+        b[3] = result & MASK_LSB
+        print (b)
+        s.sendto(b, address)
