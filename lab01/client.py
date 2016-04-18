@@ -24,15 +24,12 @@ if __name__ == '__main__':
         b.append(2**2)
     else:
         b.append(0)
-    print(b)
     # Check paramater list count
-    if len(sys.argv) > 15:
-        maxRange = 15
+    if len(sys.argv) > 14:
+        maxRange = 14
     else:
         maxRange = len(sys.argv)
     b.append(maxRange - 4)
-    print(b)
-    print("len(sys): {}, maxRange: {}, b[1]: {}" .format(len(sys.argv), maxRange, b[1]))
     # Add parameters
     for i in range(4, maxRange):
         if i % 2 == 0:
@@ -40,12 +37,12 @@ if __name__ == '__main__':
             print(b)
         else:
             b[i//2] = b[i//2] | int(sys.argv[i])
-            print(b)
     # Connect to server, send data, and receive response
     s.connect(address)
     s.sendall(b)
     data = s.recv(TRANS_SIZE)
-    print(data)
     # Process and output result
     result = ((int(data[0])) << 24) | ((int(data[1])) << 16) | ((int(data[2])) << 8) | (int(data[3]))
+    if result > (2**31):
+        result -= 2**32
     print (result)

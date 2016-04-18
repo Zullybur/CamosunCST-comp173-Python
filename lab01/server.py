@@ -22,7 +22,6 @@ if __name__ == '__main__':
     s.bind(("", int(port)))
     while True:
         data, address = s.recvfrom(TRANS_SIZE)
-        print("data:", data)
         # Initialize received data
         opcode = int(data[0])
         count = int(data[1])
@@ -30,11 +29,8 @@ if __name__ == '__main__':
             result = 0
         else:
             result = (int(data[2]) >> 4)
-            print(result)
             for i in range(1, count):
-                print("for loop. i:", i)
                 if i % 2 == 0:
-                    print("op on even")
                     if opcode == 2**0:
                         result += (int(data[i//2+2])) >> 4
                     if opcode == 2**1:
@@ -42,20 +38,16 @@ if __name__ == '__main__':
                     if opcode == 2**2:
                         result *= (int(data[i//2+2])) >> 4
                 else:
-                    print("op on odd")
                     if opcode == 2**0:
                         result += (int(data[i//2+2])) & MASK_NIB
                     if opcode == 2**1:
                         result -= (int(data[i//2+2])) & MASK_NIB
                     if opcode == 2**2:
                         result *= (int(data[i//2+2])) & MASK_NIB
-                    
-                print(result)
         # Prepare result as byte array and submit to client
         b = bytearray(RESULT_SIZE)
-        b[0] = (result >> 24)
+        b[0] = (result >> 24) & MASK_LSB
         b[1] = (result >> 16) & MASK_LSB
         b[2] = (result >> 8) & MASK_LSB
         b[3] = result & MASK_LSB
-        print (b)
         s.sendto(b, address)
