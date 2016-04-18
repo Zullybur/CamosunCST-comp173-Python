@@ -34,7 +34,6 @@ if __name__ == '__main__':
     for i in range(4, maxRange):
         if i % 2 == 0:
             b.append((int(sys.argv[i])) << 4)
-            print(b)
         else:
             b[i//2] = b[i//2] | int(sys.argv[i])
     # Connect to server, send data, and receive response
