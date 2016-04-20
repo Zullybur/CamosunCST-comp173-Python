@@ -42,6 +42,6 @@ if __name__ == '__main__':
     data = s.recv(TRANS_SIZE)
     # Process and output result
     result = ((int(data[0])) << 24) | ((int(data[1])) << 16) | ((int(data[2])) << 8) | (int(data[3]))
-    if result > (2**31):
+    if result >= (2**31):
         result -= 2**32
     print (result)
