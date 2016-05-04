@@ -41,7 +41,7 @@ def putFile(command, filePath):
     response = s.recv(1024).decode("UTF-8")
     if debugging: print ("Server says:", response)
     # Verify server response
-    if response not "OK":
+    if response != "OK":
         printError(response)
     # Get and send filesize to server
     size = os.path.getsize(filePath)
@@ -50,7 +50,7 @@ def putFile(command, filePath):
     response = s.recv(1024).decode("UTF-8")
     if debugging: print ("Server says:", response)
     # Verify server response
-    if response not "OK":
+    if response != "OK":
         printError(response)
     print("client sending file {} ({} bytes)" .format(filePath, size))
     # Send data in chunks of 1024 bytes
