@@ -18,15 +18,33 @@ def getFile(command, filePath):
     s = tcpReq(address, port)
     command += " " + filePath
     s.send(command.encode("UTF-8"))
-    conn.send("OK".encode("UTF-8"))
-    size = int.from_bytes(conn.recv(1024), byteorder='big', signed=False)
-    if debugging: print ("Client says size:", size)
+    if debugging: print ("Sending command:", command)
+    response = s.recv(1024)
+    # Verify server response
+    if (response.decode("UTF-8"))[0:5] == "ERROR":
+        printError(response.decode("UTF-8"))
+    s.send("READY".encode("UTF-8"))
+    # Receive number of bytes from server
+    response = s.recv(8)
+    size = int.from_bytes(response, byteorder='big', signed=False)
+    if debugging: print ("Server says size:", size)
+    # Send OK to server
+    if debugging: print ("Sending \"OK\"")
+    s.send("OK".encode("UTF-8"))
+    # Write file to disk
+    print ("client receiving file {} ({} bytes)" .format(filePath, size))
     with open(filePath, 'wb') as f:
         while size > 0:
-            data = conn.recv(1024)
+            data = s.recv(min(size, 1024))
             f.write(data)
             size -= len(data)
-    conn.send("DONE".encode("UTF-8"))
+    if debugging: print ("Done reading file")
+    # Check for DONE
+    response = s.recv(4).decode("UTF-8")
+    if response == "DONE":
+        print("Complete")
+    else:
+        printError(response)
 # Sample usage: client.py localhost 12345 PUT test.txt
 def putFile(command, filePath):
     # Verify existence and access to file
@@ -46,7 +64,7 @@ def putFile(command, filePath):
     # Get and send filesize to server
     size = os.path.getsize(filePath)
     if debugging: print ("Sending # of bytes:", size)
-    s.send(size.to_bytes(1024, byteorder='big', signed=False))
+    s.send(size.to_bytes(8, byteorder='big', signed=False))
     response = s.recv(1024).decode("UTF-8")
     if debugging: print ("Server says:", response)
     # Verify server response
@@ -72,15 +90,16 @@ def delFile(command, filePath):
     s = tcpReq(address, port)
     command += " " + filePath
     s.send(command.encode("UTF-8"))
+    if debugging: print ("Sending command:", command)
     print("client deleting file", filePath)
     response = s.recv(1024).decode("UTF-8")
     if response == "DONE":
         print ("Complete")
     else:
-        print ("Delete failed")
+        printError(response)
 # Print error messages from the server
 def printError(err):
-    print("Server returned error:", err)
+    print("Server returned error:", err[7:])
     sys.exit(1)
 
 if __name__ == '__main__':    
@@ -100,8 +119,6 @@ if __name__ == '__main__':
         putFile(command, filePath)
     elif command == "GET":
         getFile(command, filePath)
-        bytesize = "N/A"
-        print("client receiving file {} ({} bytes)" .format(filename, bytesize))
     elif command == "DEL":
         delFile(command, filePath)
     else:
