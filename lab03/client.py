@@ -129,18 +129,7 @@ if __name__ == '__main__':
             else:
                 print (oldData, end="", flush=True)
                 oldData = newData
-            # if debug: print ("State 3 start: newData[{}], data[{}], found[{}]" .format(newData, data, found))
-            # found, data = cleanData(oldData + newData, parseEnd, "end")
-            # if found:
-            #     if debug: print("SLICING: {} by [{}:{}]" .format(len(data), length, len(data) - len(parseEnd)))
-            #     print(data[length:(len(data) - len(parseEnd))], end="", flush=True)
-            #     state = 4
-            # else:
-            #     print(newData, end="", flush=True)
-            #     oldData = newData
-            #     newData = ""
-
         # Catch any bad states
         else:
-            parser.send("OK").encode("UTF-8")
             state = 4
+    parser.send("OK").encode("UTF-8")
