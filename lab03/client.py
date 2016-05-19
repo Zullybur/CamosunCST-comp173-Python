@@ -39,7 +39,7 @@ def getHTML(s, uri):
 def cleanData(data, term, trunc):
     pos = data.upper().find(term.upper())
     if pos == -1:
-        return False, "empty"
+        return False, data
     elif trunc == "beg":
         return True, data[pos:]
     elif trunc == "end":
@@ -68,18 +68,44 @@ if __name__ == '__main__':
     getHTML(source, resource)
     
     state = 1
-    data = ""
+    data = tmp = ""
     foundOpenHTML
     foundCloseHTML
     # Cycle states until all processes are finnished
     while state != 4:
-        # Get data from web server
+        # Get data from web server until <HTML> is found
         if state == 1:
-            clean, found = cleanData(source.recv(1024).decode("UTF-8"))
+            tmp = source.recv(1024).decode("UTF-8")
+            found, data = cleanData(data + tmp, "<html>", "beg")
+            # Check for closing tag in same block and adjust state accordingly
+            if found:
+                found, data = cleanData(data, "</html>", "end")
+                if found:
+                    parser.send(data.encode("UTF-8"))
+                    state = 3
+                else:
+                    state = 2
+            else:
+                data = tmp
+            tmp = ""
+        # Get data from source and send data to the parser, until </HTML> is found
         elif state == 2:
-            pass
+            tmp = source.recv(1024).decode("UTF-8")
+            length = len(data)
+            found, data = cleanData(data + tmp, "</html>", "end")
+            if found:
+                parser.send(data.encode("UTF-8"))
+                state = 3
+                tmp = data = ""
+            else:
+                parser.send(data[:length].encode("UTF-8"))
+                data = tmp
+        # Receive from parser until end of data flag is found
         elif state == 3:
-            pass
+            tmpparser.recv(1024).decode("UTF-8")
+        # Catch any bad states
+        else:
+            state = 4
 
     # Pull data until the opening <HTML> tag is found
     proceed = False
