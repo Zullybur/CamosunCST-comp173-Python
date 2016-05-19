@@ -38,12 +38,18 @@ def getHTML(s, uri):
 # Searches for 'term' in 'data' and truncates data 'beg'ining (before term) or 'end' (after term)
 def cleanData(data, term, trunc):
     pos = data.upper().find(term.upper())
+    if verbose: print ("cleanData.find returned:", pos)
+    endPt = pos + len(term)
     if pos == -1:
         return False, data
     elif trunc == "beg":
+        if debug: print ("5 char test data[{}:5]:{}" .format(pos, data[pos:5]))
         return True, data[pos:]
     elif trunc == "end":
-        return True, data[:(pos + len(term))]
+        if endPt == len(data):
+            return True, data
+        else:
+            return True, data[:endPt]
 
 #
 def sendData():
@@ -69,20 +75,29 @@ if __name__ == '__main__':
     
     state = 1
     data = tmp = ""
-    foundOpenHTML
-    foundCloseHTML
+    oldData = newData = ""
+    parseEnd = "COMP173 HTML CONVERT COMPLETE"
+
     # Cycle states until all processes are finnished
     while state != 4:
         # Get data from web server until <HTML> is found
         if state == 1:
             tmp = source.recv(1024).decode("UTF-8")
             found, data = cleanData(data + tmp, "<html>", "beg")
+            if debug: print("Cleaned data:\n{}\nEND" .format(data))
             # Check for closing tag in same block and adjust state accordingly
             if found:
+                if verbose: print ("found <html>")
+                parser = makeTCPConnection( ("rtvm.cs.camosun.bc.ca", 10010) )
+                if not checkResponse(parser, "READY"): sys.exit(1)
                 found, data = cleanData(data, "</html>", "end")
+                if debug: print("Re-Cleaned data:\n{}\nEND" .format(data))
                 if found:
+                    if verbose: print ("found </html> in same block")
                     parser.send(data.encode("UTF-8"))
+                    if debug: print ("Sending:\n{}\nEND SEND" .format(data))
                     state = 3
+                    data = tmp = ""
                 else:
                     state = 2
             else:
@@ -93,7 +108,9 @@ if __name__ == '__main__':
             tmp = source.recv(1024).decode("UTF-8")
             length = len(data)
             found, data = cleanData(data + tmp, "</html>", "end")
+            if debug: print("Cleaned data:\n", data, "\nEND")
             if found:
+                if verbose: print ("found </html>")
                 parser.send(data.encode("UTF-8"))
                 state = 3
                 tmp = data = ""
@@ -102,33 +119,28 @@ if __name__ == '__main__':
                 data = tmp
         # Receive from parser until end of data flag is found
         elif state == 3:
-            tmpparser.recv(1024).decode("UTF-8")
+            length = len(oldData)
+            newData = parser.recv(1024).decode("UTF-8")
+            found, combined = cleanData(oldData + newData, parseEnd, "end")
+            if debug: print("Cleaned data from parser:\n" + combined +"\nEND CLEANED")
+            if found:
+                print (combined[:len(combined) - len(parseEnd)], end="", flush=True)
+                state = 4
+            else:
+                print (oldData, end="", flush=True)
+                oldData = newData
+            # if debug: print ("State 3 start: newData[{}], data[{}], found[{}]" .format(newData, data, found))
+            # found, data = cleanData(oldData + newData, parseEnd, "end")
+            # if found:
+            #     if debug: print("SLICING: {} by [{}:{}]" .format(len(data), length, len(data) - len(parseEnd)))
+            #     print(data[length:(len(data) - len(parseEnd))], end="", flush=True)
+            #     state = 4
+            # else:
+            #     print(newData, end="", flush=True)
+            #     oldData = newData
+            #     newData = ""
+
         # Catch any bad states
         else:
+            parser.send("OK").encode("UTF-8")
             state = 4
-
-    # Pull data until the opening <HTML> tag is found
-    proceed = False
-    while not proceed:
-        data = 
-        proceed, cleaned = cleanData(data, "<HTML>", "beg")
-        # if debug: print (cleaned)
-    if verbose: print ("'<HTML>' found")
-    
-    # Check for matching closing tag in same data block
-    oneblock, cleaned = cleanData(cleaned, "</HTML>", "end")
-    if verbose and oneblock: print ("'</HTML>' found in first block")
-
-    parser = makeTCPConnection( ("rtvm.cs.camosun.bc.ca", 10010) )
-    if not checkResponse(parser, "READY"): sys.exit()
-    if oneblock:
-        if debug: print ("sending:", cleaned)
-        parser.send(cleaned.encode("UTF-8"))
-        data = parser.recv(1024).decode("UTF-8")
-        print (data)
-    else:
-        proceed = False
-        while not proceed:
-            data = requestHTTPData(source)
-            proceed, cleaned = cleanData(data)
-            sendData(parser, cleaned)
