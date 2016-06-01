@@ -132,4 +132,4 @@ if __name__ == '__main__':
         # Catch any bad states
         else:
             state = 4
-    parser.send("OK").encode("UTF-8")
+    parser.send("OK".encode("UTF-8"))
