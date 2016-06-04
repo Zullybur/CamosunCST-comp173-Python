@@ -1,4 +1,4 @@
-import os, sys, socket, threading, queue
+import os, sys, socket, threading, queue, time
 
 verbose = "-v" in sys.argv
 debugging = "-d" in sys.argv
@@ -9,64 +9,53 @@ class Manager(threading.Thread):
         threading.Thread.__init__(self)
         self.maxSize = maxSize
         self.running = set()
-        self.q = queue.Queue
+        self.q = queue.Queue()
 
     # Add elements to queue
-    def add(newT):
-        newT.start()
-        running.add(newT)
+    def enqueue(self, newT):
+        self.q.put(newT)
+
+    # Add elements to the running set
+    def add(self, queuedT):
+        self.running.add(queuedT)
+        queuedT.start()
+
+    # Remove dead threads
+    def removeDeadThreads(self):
+        for thread in self.running:
+            if not thread.isAlive():
+                self.running.remove(thread)
+                break
 
     # Check running set and add/remove as appropriate
     def run(self):
         while (True):
-            # Remove dead threads
-            for thread in running:
-                if not thread.isAlive():
-                    running.remove(thread)
-            if running
-            # Check for new threads waiting
-            if len(q) < 1:
-                sleep(1)
-                continue
+            self.removeDeadThreads()
+            # Sleep and loop if no threads waiting
+            if self.q.empty():
+                time.sleep(1)
+            # Add a thread if space is available, otherwise sleep and loop
             else:
-                if len(running) >= maxSize:
-                    sleep(1)
-                    continue
+                if len(self.running) < self.maxSize:
+                    self.add(self.q.get())
                 else:
-                    self.add(q.get())
+                    time.sleep(1)
 
 # Thread handler to send, receive or delete files
 class ClientHandler(threading.Thread):
     # Constructor
-    def __init__(self, tid, conn, cmd):
+    def __init__(self, tid, conn):
         threading.Thread.__init__(self)
-
         self.tid = tid
         self.conn = conn
-        this.cmd = cmd
+        if debugging: print("Thread {} initialized with:\n\tConnection: {}" .format(self.tid, self.conn,))
 
     # Output thread state
     def toString(self):
         print("toString not implemented yet")
 
-    # Initialize code
-    def run(self):
-        if self.cmd == "PUT":
-            if debugging: print("command is PUT (takeFile)")
-            takeFile(conn, filePath)
-        elif self.cmd == "GET":
-            if debugging: print("command is GET (giveFile)")
-            giveFile(conn, filePath)
-        elif self.cmd == "DEL":
-            if debugging: print("command is DEL (delFile)")
-            delFile(conn, filePath)
-        else:
-            print ("Wait how did I get here? (sanity check failed)")
-        if verbose: print("closing connection")
-        conn.close()
-
     # Receive and pars incoming command
-    def tcpRecvCommand(conn):
+    def tcpRecvCommand(self, conn):
         data = conn.recv(1024).decode("UTF-8")
         if verbose: print("server receiving request:", data)
 
@@ -75,11 +64,11 @@ class ClientHandler(threading.Thread):
         return dataArray[0].strip(), dataArray[1].strip()
 
     # Process a "GET" command
-    def giveFile(conn, filePath):
+    def giveFile(self, conn, filePath):
         if not os.access(filePath, os.R_OK) or not os.path.isfile(filePath):
-            failResponse(conn, "{} does not exist" .format(filePath))
+            self.failResponse(conn, "{} does not exist" .format(filePath))
             return
-        continueResponse(conn)
+        self.continueResponse(conn)
         response = conn.recv(1024)
 
         # Verify client response
@@ -89,10 +78,10 @@ class ClientHandler(threading.Thread):
         conn.send(size.to_bytes(8, byteorder='big', signed=False))
         response = conn.recv(1024).decode("UTF-8")
         if response != "OK": return
-        readFile(conn, filePath, size)
+        self.readFile(conn, filePath, size)
         conn.send("DONE".encode("UTF-8"))
 
-    def readFile(conn, filePath, size):
+    def readFile(self, conn, filePath, size):
         with open(filePath, 'rb') as f:
             while size > 0:
                 data = f.read(min(size, 1024))
@@ -100,25 +89,25 @@ class ClientHandler(threading.Thread):
                 size -= len(data)
 
     # Process a "PUT" command
-    def takeFile(conn, filePath):
+    def takeFile(self, conn, filePath):
         # Verify access to filepath
         if not os.access(".", os.R_OK):
-            failResponse(conn, "unable to create file {}" .format(filePath))
+            self.failResponse(conn, "unable to create file {}" .format(filePath))
             return
 
         # Request next recv to get file size
-        continueResponse(conn)
+        self.continueResponse(conn)
         size = int.from_bytes(conn.recv(8), byteorder='big', signed=False)
         if debugging: print ("Client says size:", size)
-        continueResponse(conn)
-        writeFile(conn, filePath, size)
+        self.continueResponse(conn)
+        self.writeFile(conn, filePath, size)
         if not os.path.isfile(filePath):
-            failResponse(conn, "unable to create file {}" .format(filePath))
+            self.failResponse(conn, "unable to create file {}" .format(filePath))
         else:
-            successResponse(conn)
+            self.successResponse(conn)
 
     # Write a file passed over a server connection    
-    def writeFile(conn, filePath, size):
+    def writeFile(self, conn, filePath, size):
         with open(filePath, 'wb') as f:
             while size > 0:
                 data = conn.recv(1024)
@@ -126,29 +115,50 @@ class ClientHandler(threading.Thread):
                 size -= len(data)
 
     # Process a "DEL" command
-    def delFile(conn, filePath):
+    def delFile(self, conn, filePath):
         if os.path.exists(filePath): 
             if verbose: print("server deleting file", filePath)
             os.remove(filePath)
             if os.path.exists(filePath):
-                failResponse(conn, "unable to delete {}" .format(filePath))
+                self.failResponse(conn, "unable to delete {}" .format(filePath))
             else:
-                successResponse(conn)
+                self.successResponse(conn)
         else:
             if debugging: print("requested file {} not found" .format(filePath))
-            failResponse(conn, "{} does not exist" .format(filePath))
+            self.failResponse(conn, "{} does not exist" .format(filePath))
 
     # Send response to indicate ready for next data chunk
-    def continueResponse(conn):
+    def continueResponse(self, conn):
         conn.send("OK".encode("UTF-8"))
 
     # Send response to indicate task complete and connection closing
-    def successResponse(conn):
+    def successResponse(self, conn):
         conn.send("DONE".encode("UTF-8"))
 
     # Send an error response to the client
-    def failResponse(conn, err):
+    def failResponse(self, conn, err):
         conn.send(("ERROR: {}" .format(err)).encode("UTF-8"))
+
+    # Initialize code
+    def run(self):
+        if debugging: print("Thread {} started." .format(self.tid))
+
+        self.conn.send("READY".encode("UTF-8"))
+        cmd, filePath = self.tcpRecvCommand(self.conn)
+
+        if cmd == "PUT":
+            if debugging: print("command is PUT (takeFile)")
+            self.takeFile(self.conn, filePath)
+        elif cmd == "GET":
+            if debugging: print("command is GET (giveFile)")
+            self.giveFile(self.conn, filePath)
+        elif cmd == "DEL":
+            if debugging: print("command is DEL (delFile)")
+            self.delFile(self.conn, filePath)
+        else:
+            print ("Wait how did I get here? (sanity check failed)")
+        if verbose: print("closing connection")
+        self.conn.close()
 
 # Open a tcp connection listener
 def tcpListen(address, queue):
@@ -168,9 +178,12 @@ def tcpAccept(s):
 if __name__ == '__main__':
     address = ("", int(sys.argv[1]))
     maxThreads = int(sys.argv[2])
+    mgr = Manager(maxThreads)
+    mgr.start()
     s = tcpListen(address, 0)
+    i = 0
     while True:
         conn = tcpAccept(s)
-        command, filePath = tcpRecvCommand(conn)
-        # Determine command and execute instruction
-        
+        i += 1
+        thread = ClientHandler(i, conn)
+        mgr.enqueue(thread)
