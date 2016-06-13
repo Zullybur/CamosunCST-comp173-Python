@@ -1,4 +1,4 @@
-package lab5;
+package comp173.lab5;
 
 public class ClientA {
     private enum connType {
@@ -17,43 +17,72 @@ public class ClientA {
     }
 
     /**
-     * Create a byte array using nibbles packed in to bytes
+     * Create a byte array using nibbles packed in to bytes,
+     * based off the system arguments
      */
-    private void buildByteArray() {
+    private byte[] buildByteArray() {
+        // [0] - operator (+: 2^0) (-: 2^1) (*: 2^2)
+        // [1] - count of following integers
+        // [2] - integers passed as nibbles
         throw new NotImplementedException();
     }
 
     /**
      * Establish server connection
      */
-    private static something serverConnect() {
+    private something serverConnect() {
         throw new NotImplementedException();
     }
 
+    /**
+     * Receive and confirm initial server connection.
+     * Return true if server sends "READY", otherwise return false;
+     */
+    private boolean connGetReady() {
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Send the byte array to the server
+     */
+    private void connSendByteArray() {
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Receive the result array from the server
+     */
+    private byte[] connReceiveData() {
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Unpack the result from the server and handle case
+     */
+    private int unpackResult() {
+        throw new NotImplementedException();
+    }
 
     public static void main(String[] args) {
 
         // Process command line args
         parseCommandLineArguments(args);
         // Built byte array
-        buildByteArray();
+        byte[] b = buildByteArray();
         // Connect to server
         conn = serverConnect();
         // Receive READY
         if (connGetReady()) {
+            // Send byte array:
             connSendByteArray();
         }
-        /*
-         * Send byte array:
-         * [0] - operator (+: 2^0) (-: 2^1) (*: 2^2)
-         * [1] - count of following integers
-         * [2] - integers passed as nibbles
-         */
-g
+        
         // Receive result
-        connReceiveData();
+        byte[] data = connReceiveData();
+
         // Unpack result
-        int result = unpackNibbles();
+        int result = unpackResult();
+
         // Display result + newline
         System.out.println(result);
     }
