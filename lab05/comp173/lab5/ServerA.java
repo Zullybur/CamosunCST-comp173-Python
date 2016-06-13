@@ -1,35 +1,54 @@
 package comp173.lab5;
 
+import java.lang.*;
+import java.net.*;
+import java.io.*;
+
 public class ServerA {
-    private enum connType {
-        UDP, TCP
-    }
-    
-    /**
-     * Send the initial message to a client when ready to begin communication
-     */
-    private void initiateProtocol() {
-        throw new NotImplementedException();
-    }
+    public static final int MAX_BUFF = 1024;
 
-    /**
-     * Receive the data for calculation request from the client
-     */
-    private void receiveRequest() {
-        throw new NotImplementedException();
-    }
-
-    /**
-     * Close the connection
-     */
     public static void main(String[] args) {
         // Process command line args
+        int port = Integer.parseInt(args[0]);
 
-        // PROTOCOL:
-        //     -- Send READY on connect
-        //     -- Receive Request
-        //     -- Send Result
-        //     -- Close Connection
+        // Set up server connection
+        ServerSocket serverSock;
 
+        try {
+            serverSock = new ServerSocket(port);
+        } catch (IOException ex) {
+            System.out.println(ex);
+            return;
+        }
+
+        Socket clientSock;
+        BufferedInputStream bin;
+        BufferedOutputStream bout;
+        byte[] data = new byte[MAX_BUFF];
+        byte[] bArray;
+        while(true) {
+            try {
+                clientSock = serverSock.accept();
+                bin = new BufferedInputStream(clientSock.getInputStream());
+                bout = new BufferedOutputStream(clientSock.getOutputStream());
+
+                bArray = "READY".getBytes();
+                bout.write(bArray, 0, bArray.length);
+                bout.flush();
+
+                bin.read(data, 0, 1024);
+                System.out.println("Received array of size: " + data.length);
+
+                clientSock.close();
+
+            } catch (IOException ex) {
+                System.out.println(ex);
+                return;
+            }
+            for (int i = 0; i < (data[1]/2) + (data[1] % 2 == 0 ? 2 : 3); i++) {
+                System.out.println("Received: " + data[i]);
+            }
+            
+        }
     }
 }

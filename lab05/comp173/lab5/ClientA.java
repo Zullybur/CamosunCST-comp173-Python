@@ -11,9 +11,6 @@ public class ClientA {
     public static final int MAX_BUFF = 1024;
 
     private static int offest;
-    private enum connType {
-        UDP, TCP
-    }
     private static String host;
     private static int port;
     private static int operatorCode;
@@ -27,6 +24,9 @@ public class ClientA {
 
         // Built byte array
         byte[] b = buildByteArray();
+        for (byte by : b) {
+            System.out.println("Sending: " + by);
+        }
 
         // Create Socket and BufferedOutputStream, then write byte array to output stream
         Socket sock;
@@ -38,9 +38,10 @@ public class ClientA {
             sock = new Socket(host, port);
             bin = new BufferedInputStream(sock.getInputStream());
             bout = new BufferedOutputStream(sock.getOutputStream());
-            
+
             bin.read(data, 0, MAX_BUFF);
             bout.write(b, 0, b.length);
+            bout.flush();
         } catch (IOException ex) {
             System.out.println(ex);
             return;
@@ -118,18 +119,15 @@ public class ClientA {
         // [0] - operator (+: 2^0) (-: 2^1) (*: 2^2)
         // [1] - count of following integers
         // [2] - integers passed as nibbles
-        byte[] b = new byte[values.length + 2];
+        byte[] b = new byte[(values.length / 2) + (values.length % 2 == 0 ? 2 : 3)];
+        System.out.println("values.length: "+values.length);
+        System.out.println("b.length: "+b.length);
 
         b[0] = (byte)operatorCode;
         b[1] = (byte)values.length;
 
-        for (int i = 0; i < values.length; i += 2) {
-            b[i + 2] = (byte)(values[i] << 4);
-            try {
-                b[i + 2] = (byte)(b[i + 2] | values[i + 1]);
-            } catch (ArrayIndexOutOfBoundsException ex) {
-                // Crash prevention - catch odd number of arguments
-            }
+        for (int i = 0, j = 2; i < values.length; ) {
+            b[j] = (byte)(i % 2 == 0 ? values[i++] << 4 : b[j++] | values[i++]);
         }
         return b;
     }
