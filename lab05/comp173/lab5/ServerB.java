@@ -4,17 +4,20 @@ import java.lang.*;
 import java.net.*;
 import java.io.*;
 
-public class ServerA {
+public class ServerB {
     public static final int MAX_BUF = 1024;
-    public static final int MAX_INT = 4;
 
+    // Cmd line arg flags
     private static boolean verbose, debugging;
 
+    // Networking objects
     private static Socket clientSock;
+    private static PrintWriter pwrite;
     private static BufferedInputStream bin;
-    private static BufferedOutputStream bout;
+    private static DataOutputStream dout;
+
+    // Class Variables
     private static byte[] data = new byte[MAX_BUF];
-    private static byte[] bArray = new byte[MAX_INT];
     
     public static void main(String[] args) {
         setFlags(args);
@@ -34,24 +37,17 @@ public class ServerA {
 
         while(true) {
             try {
+                // Set up client connection
                 clientSock = serverSock.accept();
+                pwrite = new PrintWriter(clientSock.getOutputStream());
                 bin = new BufferedInputStream(clientSock.getInputStream());
-                bout = new BufferedOutputStream(clientSock.getOutputStream());
+                dout = new DataOutputStream(clientSock.getOutputStream());
 
-                if (verbose) System.out.println("Connection made, sending ready and receiving results.");
+                // Send READY and get response
+                if (verbose) System.out.println(
+                    "Connection made, sending ready and receiving results.");
                 sendReadyGetResponse();
 
-                // If debugging, print out elements
-                if (debugging) {
-                    System.out.println("Received: ");
-                    int i;
-                    for (i = 0; i < 6; i++) {
-                        System.out.print(data[i] + ", ");
-                    }
-                    System.out.println(data[i]);
-                }
-
-                // Parse data
                 int numParams = data[1];
 
                 if (numParams <= 0) {
@@ -77,37 +73,13 @@ public class ServerA {
                     System.out.println("Result: " + result);
                 }
 
-                // Build and send result in to byte array
-                buildByteArray(result);
-                
-                if (debugging) {
-                    System.out.println("Built Data:");
-                    int i;
-                    for (i = 0; i < MAX_INT - 1; i++) {
-                        System.out.print(bArray[i] + ", ");
-                    }
-                    System.out.println(bArray[i]);
-                }
-
-                bout.write(bArray, 0, bArray.length);
-                bout.flush();
-
+                // Send back result and close connection
+                dout.writeInt(result);
+                dout.flush();
                 clientSock.close();
-
             } catch (IOException ex) {
-                System.out.println(ex);
-                return;
+                System.out.println("ERROR!\n"+ex);
             }
-            
-            
-        }
-    }
-
-    private static void buildByteArray(int result) {
-        int mask = (int)Math.pow(2,8) - 1;
-
-        for (int i = 0; i < MAX_INT; i++) {
-            bArray[i] = (byte)((result >> (i * 8)) & mask);
         }
     }
 
@@ -150,6 +122,24 @@ public class ServerA {
     }
 
     /**
+     * Send "READY" to client to initiate data transfer, and receive the data
+     */
+    private static void sendReadyGetResponse() {
+        try {
+            pwrite.print("READY");
+            pwrite.flush();
+            if (verbose) System.out.println("READY sent");
+            if (pwrite.checkError()) {
+                System.out.println("Error occured in print writer");
+            }
+            bin.read(data, 0, 1024);
+            if (verbose) System.out.println("Received array of size: " + data.length);
+        } catch (IOException ex) {
+            System.out.println(ex);
+        }
+    }
+
+    /**
      * Check through command line arguments for flags
      */
     private static void setFlags(String[] args) {
@@ -158,23 +148,6 @@ public class ServerA {
                 verbose = true;
             if (arg.equals("-d"))
                 debugging = true;
-        }
-    }
-
-    /**
-     * Send "READY" to client to initiate data transfer, and receive the data
-     */
-    private static void sendReadyGetResponse() {
-        try {
-            bArray = "READY".getBytes();
-            bout.write(bArray, 0, bArray.length);
-            bout.flush();
-
-            bin.read(data, 0, 1024);
-            if (verbose) System.out.println("Received array of size: " + data.length);
-        } catch (IOException ex) {
-            System.out.println(ex);
-            return;
         }
     }
 }

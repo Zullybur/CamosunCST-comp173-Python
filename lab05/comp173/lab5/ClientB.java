@@ -5,21 +5,21 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.io.*;
 
-public class ClientA {
+public class ClientB {
     public static final int OFFSET = 3;
     public static final int MAX_PARAM = 15;
     public static final int MAX_BUFF = 1024;
     public static final String READY_RESPONSE = "READY";
     public static final int READY_INDEX = 5;
-    public static final int RESULT_LENGTH = 4;
 
     private static String host;
     private static int port, operatorCode;
     private static int[] values;
 
     private static Socket sock;
-    private static BufferedInputStream bin;
+    private static BufferedReader bread;
     private static BufferedOutputStream bout;
+    private static DataInputStream din;
 
     public static void main(String[] args) {
         // Process command line args
@@ -27,55 +27,30 @@ public class ClientA {
 
         // Built byte array
         byte[] b = buildByteArray();
-        for (byte by : b) {
-            // System.out.println("Sending: " + by);
-        }
 
         try {
             // Set up socket with server
             setUpSocket();
 
             // Get and check READY response from server
-            byte[] data = new byte[MAX_BUFF];
-            if (!connGetReady(data)) {
+            if (!connGetReady()) {
                 System.out.println("Bad response from server");
                 return;
             }
-
+            // System.out.println("Sending data to server now");
             // Send data to server
             bout.write(b, 0, b.length);
             bout.flush();
+            // System.out.println("Sent data to server now");
 
             // Receive result
-            bin.read(data, 0, MAX_BUFF);
-
-            int result = unpackResult(data);
-
+            int result = din.readInt();
             System.out.println(result);
 
         } catch (IOException ex) {
             System.out.println(ex);
             return;
         }
-        
-
-        // Connect to server
-        // sock.connect()
-
-        // // Receive READY
-        // if (connGetReady()) {
-        //     // Send byte array:
-        //     connSendByteArray();
-        // }
-        
-        // // Receive result
-        // byte[] data = connReceiveData();
-
-        // // Unpack result
-        // int result = unpackResult();
-
-        // // Display result + newline
-        // System.out.println(result);
     }
     
     /**
@@ -146,8 +121,9 @@ public class ClientA {
     private static void setUpSocket() throws IOException {
         try {
             sock = new Socket(host, port);
-            bin = new BufferedInputStream(sock.getInputStream());
+            bread = new BufferedReader(new InputStreamReader(sock.getInputStream()));
             bout = new BufferedOutputStream(sock.getOutputStream());
+            din = new DataInputStream(sock.getInputStream());
         } catch (IOException ex) {
             throw new IOException(ex);
         }
@@ -156,35 +132,22 @@ public class ClientA {
      * Receive and confirm initial server connection.
      * Return true if server sends "READY", otherwise return false;
      */
-    private static boolean connGetReady(byte[] data) {
+    private static boolean connGetReady() {
         try {
             // Wait for READY initiation from server
-            bin.read(data, 0, MAX_BUFF);
+            // System.out.println("About to receive READY");
+            char[] tmp = new char[5];
+            bread.read(tmp, 0, tmp.length);
+            String ready = new String(tmp);
 
-            if (!(new String(data)).substring(0,READY_INDEX).equals(READY_RESPONSE)) {
-                return false;
+            // System.out.println("Received: "+ ready);
+            if (ready.equals(READY_RESPONSE)) {
+                return true;
             }
-            return true;
+            return false;
         } catch (IOException ex) {
             System.out.println(ex);
         }
         return false;
-    }
-
-    /**
-     * Unpack the result from the server and handle case
-     */
-    private static int unpackResult(byte[] data) {
-        int result = 0;
-        for (int i = 0; i < RESULT_LENGTH; i++) {
-            int tmpNum = (data[i] & 255) << (i * 8) ;
-            result = result | tmpNum;
-            // DEBUG:
-            // System.out.println("------- Interation: "+i+" -------");
-            // System.out.println("Shifted: " + Integer.toBinaryString(data[i]) + " by " + (i * 8) + ".");
-            // System.out.println("Adding: " + Integer.toBinaryString(tmpNum) + " to result.");
-            // System.out.println("Result is now: " + Integer.toBinaryString(result) + " ("+result+")");
-        }
-        return result;
     }
 }
